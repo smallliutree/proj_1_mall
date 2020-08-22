@@ -14,8 +14,12 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 from django.http import HttpResponse
+from utils.converters import UsernameConverter
+from django.urls import register_converter
+
+register_converter(UsernameConverter,'username')
 
 def index(request):
 
@@ -23,5 +27,5 @@ def index(request):
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('index/', index)
+    path('',include('apps.users.urls'))
 ]

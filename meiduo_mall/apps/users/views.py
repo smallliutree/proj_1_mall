@@ -7,6 +7,7 @@ from django.http import JsonResponse
 import json
 from django import http
 import re
+from django.contrib.auth import login
 
 class UsernameCountView(View):
     """判断用户名是否重复注册"""
@@ -58,5 +59,7 @@ class RegisterView(View):
                                             mobile=mobile)
         except Exception as e:
             return http.JsonResponse({'code': 400, 'errmsg': '注册失败!'})
+
+        login(request, user)
 
         return http.JsonResponse({'code': 0, 'errmsg': '注册成功!'})

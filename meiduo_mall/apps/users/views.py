@@ -2,6 +2,8 @@ from django.shortcuts import render
 
 # Create your views here.
 from django.views import View
+from django_redis import get_redis_connection
+
 from apps.users.models import User
 from django.http import JsonResponse
 import json
@@ -33,6 +35,7 @@ class RegisterView(View):
         password2 = body_dict.get('password2')
         mobile = body_dict.get('mobile')
         allow = body_dict.get('allow')
+        sms_code_client = request.POST.get('sms_code')
 
         # 判断参数是否齐全
         if not all([username, password, password2, mobile, allow]):
@@ -52,6 +55,15 @@ class RegisterView(View):
         # 判断是否勾选用户协议
         if allow != True:
             return http.JsonResponse({'code': 400, 'errmsg': 'allow格式有误!'})
+
+        redis_conn = get_redis_connection('verify_code')
+        sms_code_server = redis_conn.get('sms_%s' % mobile)  # sms_code_server是bytes
+        # 判断短信验证码是否过期
+        if not sms_code_server:
+            return http.JsonResponse({'code': 400, 'errmsg': '短信验证码失效'})
+        # 对比用户输入的和服务端存储的短信验证码是否一致
+        if sms_code_client != sms_code_server.decode():
+            return http.JsonResponse({'code': 400, 'errmsg': '短信验证码有误'})
 
         try:
             user = User.objects.create_user(username=username,

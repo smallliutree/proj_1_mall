@@ -9,7 +9,8 @@ from django.http import JsonResponse
 import json
 from django import http
 import re
-from django.contrib.auth import login, authenticate
+from django.contrib.auth import login, authenticate, logout
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 class UsernameCountView(View):
     """判断用户名是否重复注册"""
@@ -106,4 +107,34 @@ class LoginView(View):
         else:
             request.session.set_expiry(0)
 
-        return JsonResponse({'code': 0, 'errmsg': 'ok'})
+        response = JsonResponse({'code': 0, 'errmsg': 'ok'})
+
+        response.set_cookie('username', user.username, max_age=3600 * 24 * 15)
+
+        return response
+
+
+class LogoutView(View):
+    def delete(self, request):
+        logout(request)
+        response = JsonResponse({'code': 0, 'errmsg': 'ok'})
+        response.delete_cookie('username')
+
+        return response
+
+
+class UserInfoView(LoginRequiredMixin, View):
+    """用户中心"""
+
+    def get(self, request):
+        """提供个人信息界面"""
+        return http.JsonResponse({
+            'code': 0,
+            'errmsg': '个人中心',
+             "info_data":{
+                    "username":"itcast",
+                    "mobile": "18310820688",
+                    "email": "",
+                    "email_active": 'true'
+                }
+            })

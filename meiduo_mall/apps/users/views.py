@@ -94,4 +94,8 @@ class LoginView(View):
         login(request, user)
 
         if remember:
-            request.session.set_
+            request.session.set_expiry(None)
+        else:
+            request.session.set_expiry(0)
+
+        return JsonResponse({'code': 0, 'errmsg': 'ok'})

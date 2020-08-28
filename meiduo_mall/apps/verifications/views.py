@@ -7,6 +7,7 @@ from django.http import HttpResponse, JsonResponse
 from django_redis import get_redis_connection
 from random import randint
 from libs.yuntongxun.sms import CCP
+from celery_tasks.sms.tasks import celery_send_sms
 
 
 class ImageCodeView(View):
@@ -41,7 +42,8 @@ class SmsCodeView(View):
         pipeline = redis_conn.pipeline()
 
         pipeline.setex(mobile, 300, sms_code)
-        CCP().send_template_sms(mobile, [sms_code, 5], 1)
+        # CCP().send_template_sms(mobile, [sms_code, 5], 1)
+        celery_send_sms.delay(mobile, sms_code)
 
         pipeline.setex('send_flag_%s' % mobile, 60, 1)
         pipeline.execute()

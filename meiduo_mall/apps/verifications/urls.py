@@ -3,4 +3,5 @@ from . import views
 
 urlpatterns = [
     path('image_codes/<uuid>/', views.ImageCodeView.as_view()),
+    path('sms_codes/<mobile:mobile>/', views.SmsCodeView.as_view()),
 ]

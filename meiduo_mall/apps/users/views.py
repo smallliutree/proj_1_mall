@@ -7,7 +7,7 @@ from django.http import JsonResponse
 import json
 from django import http
 import re
-from django.contrib.auth import login
+from django.contrib.auth import login, authenticate
 
 class UsernameCountView(View):
     """判断用户名是否重复注册"""
@@ -63,3 +63,23 @@ class RegisterView(View):
         login(request, user)
 
         return http.JsonResponse({'code': 0, 'errmsg': '注册成功!'})
+
+
+class LoginView(View):
+    def post(self, request):
+        data = json.loads(request.body.decode())
+        username = data.get('username')
+        password = data.get('password')
+        remember = data.get('remembered')
+
+        if not all([username, password]):
+            return JsonResponse({'code': 400, 'errmsg': '参数不全'})
+
+        user = authenticate(username=username, password=password)
+        if user is None:
+            return JsonResponse({'code': 400, 'errmsg': '用户名或密码不正确'})
+
+        login(request, user)
+
+        if remember:
+            request.session.set_

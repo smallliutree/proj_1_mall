@@ -32,7 +32,15 @@ class SmsCodeView(View):
             return JsonResponse({'code': 400, 'errmsg': '输入图形验证码有误'})
         redis_conn.delete(uuid)
 
+        send_flag = redis_conn.get('send_flag_%s' % mobile)
+        if send_flag:
+            return JsonResponse({'code': 400, 'errmsg': '发送短信过于频繁'})
+
         sms_code = '%06d' % randint(0, 999999)
         redis_conn.setex(mobile, 300, sms_code)
         CCP().send_template_sms(mobile, [sms_code, 5], 1)
+
+        redis_conn.setex('sms_%s' % mobile, 300, sms_code)
+        redis_conn.setex('send_flag_%s' % mobile, 60, 1)
+
         return JsonResponse({'code': 0, 'errmsg': '发送短信成功'})

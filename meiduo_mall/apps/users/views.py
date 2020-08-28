@@ -87,6 +87,14 @@ class LoginView(View):
         if not all([username, password]):
             return JsonResponse({'code': 400, 'errmsg': '参数不全'})
 
+        if re.match('^1[3-9]\d{9}$', username):
+            # 手机号
+            User.USERNAME_FIELD = 'mobile'
+        else:
+            # account 是用户名
+            # 根据用户名从数据库获取 user 对象返回.
+            User.USERNAME_FIELD = 'username'
+
         user = authenticate(username=username, password=password)
         if user is None:
             return JsonResponse({'code': 400, 'errmsg': '用户名或密码不正确'})

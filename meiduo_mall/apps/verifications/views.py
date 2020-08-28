@@ -37,10 +37,13 @@ class SmsCodeView(View):
             return JsonResponse({'code': 400, 'errmsg': '发送短信过于频繁'})
 
         sms_code = '%06d' % randint(0, 999999)
-        redis_conn.setex(mobile, 300, sms_code)
+
+        pipeline = redis_conn.pipeline()
+
+        pipeline.setex(mobile, 300, sms_code)
         CCP().send_template_sms(mobile, [sms_code, 5], 1)
 
-        redis_conn.setex('sms_%s' % mobile, 300, sms_code)
-        redis_conn.setex('send_flag_%s' % mobile, 60, 1)
+        pipeline.setex('send_flag_%s' % mobile, 60, 1)
+        pipeline.execute()
 
         return JsonResponse({'code': 0, 'errmsg': '发送短信成功'})

@@ -1,3 +1,4 @@
+from django.core.mail import send_mail
 from django.shortcuts import render
 
 # Create your views here.
@@ -128,13 +129,53 @@ class UserInfoView(LoginRequiredMixin, View):
 
     def get(self, request):
         """提供个人信息界面"""
-        return http.JsonResponse({
-            'code': 0,
-            'errmsg': '个人中心',
-             "info_data":{
-                    "username":"itcast",
-                    "mobile": "18310820688",
-                    "email": "",
-                    "email_active": 'true'
-                }
-            })
+        # 获取界面需要的数据,进行拼接
+        info_data = {
+            'username': request.user.username,
+            'mobile': request.user.mobile,
+            'email': request.user.email,
+            'email_active': request.user.email_active
+        }
+
+        # 返回响应
+        return JsonResponse({'code': 0, 'errmsg': 'ok', 'info_data': info_data})
+
+
+class EmailView(View):
+    def put(self, request):
+        json_dict = json.loads(request.body.decode())
+        email = json_dict.get('email')
+
+        if not email:
+            return JsonResponse({'code': 400, 'errmsg': '缺少email参数'})
+        if not re.match(r'^[a-z0-9][\w\.\-]*@[a-z0-9\-]+(\.[a-z]{2,5}){1,2}$', email):
+            return JsonResponse({'code': 400, 'errmsg': '参数email有误'})
+
+        try:
+            request.user.email = email
+            request.user.save()
+
+            # subject = 'asd'
+            # message = ''
+            # from_email = 'qi_rui_hua@163.com'
+            # recipient_list = [email]
+            #
+            # from apps.users.utils import generic_email_access_token
+            # access_token = generic_email_access_token(request.user.id, email)
+            #
+            # verify_url = 'http://www.meiduo.site:8080/success_verify_email.html?token=%s' % access_token
+            # html_message = '<p>尊敬的用户您好！</p>' \
+            #                '<p>感谢您使用美多商城。</p>' \
+            #                '<p>您的邮箱为：%s 。请点击此链接激活您的邮箱：</p>' \
+            #                '<p><a href="%s">%s<a></p>' % (email, verify_url, verify_url)
+            # send_mail(subject, message, from_email, recipient_list, html_message=html_message)
+
+            from apps.users.utils import generic_email_access_token
+            access_token = generic_email_access_token(request.user.id, email)
+
+            from celery_tasks.email.tasks import celery_send_mail
+            celery_send_mail.delay(email, access_token)
+
+            return JsonResponse({'code': 0, 'errmsg': 'success'})
+        except Exception as e:
+            return JsonResponse({'code': 400, 'errmsg': '添加邮箱失败'})

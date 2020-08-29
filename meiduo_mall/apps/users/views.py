@@ -13,6 +13,9 @@ import re
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.mixins import LoginRequiredMixin
 
+from apps.users.utils import check_verify_email_token
+
+
 class UsernameCountView(View):
     """判断用户名是否重复注册"""
 
@@ -180,3 +183,29 @@ class EmailView(View):
             return JsonResponse({'code': 0, 'errmsg': 'success'})
         except Exception as e:
             return JsonResponse({'code': 400, 'errmsg': '添加邮箱失败'})
+
+
+class VerifyEmailView(View):
+    def put(self, request):
+        # - 1.接收 token
+        token = request.GET.get('token')
+
+        if not token:
+            return JsonResponse({'code': 400, 'errmsg': 'token缺少'})
+
+        # - 2.解密
+        data_dict = check_verify_email_token(token)
+
+        # - 4.去数据库对比 user_id,email
+        try:
+            user = User.objects.get(pk=data_dict.get('user_id'), email=data_dict.get('email'))
+        except Exception as e:
+            print(e)
+            return JsonResponse({'code': 400, 'errmsg': '参数有误!'})
+
+        # - 5.修改激活状态
+        try:
+            user.email_active = True
+            user.save()
+        except Exception as e:
+            return JsonResponse({'code': 0, 'errmsg': '激活失败!'})

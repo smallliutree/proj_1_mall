@@ -12,6 +12,7 @@ from django import http
 import re
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.mixins import LoginRequiredMixin
+from apps.users.models import Address
 
 from apps.users.utils import check_verify_email_token
 
@@ -235,7 +236,6 @@ class CreateAddressView(LoginRequiredMixin, View):
             if not re.match(r'^[a-z0-9][\w\.\-]*@[a-z0-9\-]+(\.[a-z]{2,5}){1,2}$', email):
                 return http.HttpResponseBadRequest('参数email有误')
         #3
-        from apps.users.models import Address
         address = Address.objects.create(
             user=request.user,
             title=receiver,
@@ -265,3 +265,26 @@ class CreateAddressView(LoginRequiredMixin, View):
             "email": address.email
         }
         return JsonResponse({'code': 0, 'errmsg': 'ok', 'address': address_dict})
+
+
+class AddressView(View):
+    def get(self, request):
+        #1
+        addresses = Address.objects.filter(user=request.user, is_deleted=False)
+        address_dict = []
+        for address in addresses:
+            address_dict = {
+                "id": address.id,
+                "title": address.title,
+                "receiver": address.receiver,
+                "province": address.province.name,
+                "city": address.city.name,
+                "district": address.district.name,
+                "place": address.place,
+                "mobile": address.mobile,
+                "tel": address.tel,
+                "email": address.email
+            }
+
+        #3
+        return JsonResponse({'code': 0, 'errmsg': 'ok', 'addresses': address_dict})

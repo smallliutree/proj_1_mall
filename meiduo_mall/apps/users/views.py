@@ -209,3 +209,59 @@ class VerifyEmailView(View):
             user.save()
         except Exception as e:
             return JsonResponse({'code': 0, 'errmsg': '激活失败!'})
+
+
+class CreateAddressView(LoginRequiredMixin, View):
+    def post(self, request):
+        json_dict = json.loads(request.body.decode())
+        json_dict = json.loads(request.body.decode())
+        receiver = json_dict.get('receiver')
+        province_id = json_dict.get('province_id')
+        city_id = json_dict.get('city_id')
+        district_id = json_dict.get('district_id')
+        place = json_dict.get('place')
+        mobile = json_dict.get('mobile')
+        tel = json_dict.get('tel')
+        email = json_dict.get('email')
+        #2
+        if not all([receiver, province_id, city_id, district_id, place, mobile]):
+            return http.HttpResponseBadRequest('缺少必传参数')
+        if not re.match(r'^1[3-9]\d{9}$', mobile):
+            return http.HttpResponseBadRequest('参数mobile有误')
+        if tel:
+            if not re.match(r'^(0[0-9]{2,3}-)?([2-9][0-9]{6,7})+(-[0-9]{1,4})?$', tel):
+                return http.HttpResponseBadRequest('参数tel有误')
+        if email:
+            if not re.match(r'^[a-z0-9][\w\.\-]*@[a-z0-9\-]+(\.[a-z]{2,5}){1,2}$', email):
+                return http.HttpResponseBadRequest('参数email有误')
+        #3
+        from apps.users.models import Address
+        address = Address.objects.create(
+            user=request.user,
+            title=receiver,
+            receiver=receiver,
+            province_id=province_id,
+            city_id=city_id,
+            district_id=district_id,
+            place=place,
+            mobile=mobile,
+            tel=tel,
+            email=email
+        )
+        if not request.user.default_address:
+            request.user.default_address = address
+            request.user.save()
+        #4
+        address_dict = {
+            "id": address.id,
+            "title": address.title,
+            "receiver": address.receiver,
+            "province": address.province.name,
+            "city": address.city.name,
+            "district": address.district.name,
+            "place": address.place,
+            "mobile": address.mobile,
+            "tel": address.tel,
+            "email": address.email
+        }
+        return JsonResponse({'code': 0, 'errmsg': 'ok', 'address': address_dict})

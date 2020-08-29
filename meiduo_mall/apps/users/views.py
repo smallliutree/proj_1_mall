@@ -169,6 +169,7 @@ class EmailView(View):
             #                '<p>您的邮箱为：%s 。请点击此链接激活您的邮箱：</p>' \
             #                '<p><a href="%s">%s<a></p>' % (email, verify_url, verify_url)
             # send_mail(subject, message, from_email, recipient_list, html_message=html_message)
+            # asd
 
             from apps.users.utils import generic_email_access_token
             access_token = generic_email_access_token(request.user.id, email)

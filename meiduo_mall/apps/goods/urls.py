@@ -7,5 +7,5 @@ urlpatterns = [
     path('hot/<int:category_id>/', HotView.as_view()),
 
     path('search/', MySearchView()),
-    path('detail/', DetailView.as_view()),
+    path('detail/<int:sku_id>/', DetailView.as_view()),
 ]

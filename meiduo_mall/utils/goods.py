@@ -1,83 +1,10 @@
-
-
-def get_breadcrumb(category):
-    '''接收最低级别的类别, 获取各个类别的名称, 返回'''
-
-    dict = {
-        'cat1':'',
-        'cat2':'',
-        'cat3':'',
-    }
-
-    if category.parent is None:
-        dict['cat1'] = category.name
-    elif category.parent.parent is None:
-        dict['cat2'] = category.name
-        dict['cat1'] = category.parent.name
-    else:
-        dict['cat3'] = category.name
-        dict['cat2'] = category.parent.name
-        dict['cat1'] = category.parent.parent.name
-
-    return dict
-
-
-# 导入:
-from django import http
 from collections import OrderedDict
 from apps.goods.models import GoodsCategory
-from apps.goods.models import GoodsChannel, SKU
-from apps.goods.models import  SKUImage, SKUSpecification
-from apps.goods.models import  SPUSpecification, SpecificationOption
+from apps.goods.models import GoodsChannel
 
-
-def get_goods_and_spec(sku_id):
-
-    # ======== 获取该商品和该商品对应的规格选项id ========
-    # 根据 sku_id 获取该商品(sku)
-    sku = SKU.objects.get(id=sku_id)
-    # 获取该商品的图片
-    sku.images = SKUImage.objects.filter(sku=sku)
-
-    # ======== 获取类别下所有商品对应的规格选项id ========
-    # 根据sku对象,获取对应的类别
-    goods = sku.goods
-
-    # 获取该类别下面的所有商品
-    skus = SKU.objects.filter(goods=goods)
-
-    dict = {}
-    for temp_sku in skus:
-        # 获取每一个商品(temp_sku)的规格参数
-        sku_zuhe = SKUSpecification.objects.filter(sku=temp_sku).order_by('spec_id')
-
-        temp_list = []
-        for zuhe in sku_zuhe:
-            # 规格 ---> 规格选项 ---> 规格选项id ----> 保存到[]
-            temp_list.append(zuhe.option.id)
-
-        # 把 list 转为 () 拼接成 k : v 保存到dict中:
-        dict[tuple(temp_list)] = temp_sku.id
-
-    # ======== 在每个选项上绑定对应的sku_id值 ========
-    guige_list = SPUSpecification.objects.filter(goods=goods).order_by('id')
-
-    for index, guige in enumerate(guige_list):
-
-        # 该规格的选项
-        guige_xuanxiang = SpecificationOption.objects.filter(spec=guige)
-
-        for xuanxiang in guige_xuanxiang:
-            # 在规格参数sku字典中查找符合当前规格的sku
-            temp_list[index] = xuanxiang.id
-            xuanxiang.sku_id = dict.get(tuple(temp_list))
-
-        guige.spec_options = guige_xuanxiang
-
-    return goods, guige_list, sku
-
-
-
+"""
+分类数据
+"""
 def get_categories():
 
     # 定义一个有序字典对象
@@ -127,10 +54,72 @@ def get_categories():
             categories[group_id]['sub_cats'].append(cat2)
 
     return categories
+"""
+面包屑
+"""
+def get_breadcrumb(category):
+    '''接收最低级别的类别, 获取各个类别的名称, 返回'''
 
+    dict = {
+        'cat1':'',
+        'cat2':'',
+        'cat3':'',
+    }
 
+    if category.parent is None:
+        dict['cat1'] = category.name
+    elif category.parent.parent is None:
+        dict['cat2'] = category.name
+        dict['cat1'] = category.parent.name
+    else:
+        dict['cat3'] = category.name
+        dict['cat2'] = category.parent.name
+        dict['cat1'] = category.parent.parent.name
 
+    return dict
 
+"""
+规格选项
+"""
+def get_goods_specs(sku):
+    # 构建当前商品的规格键
+    sku_specs = sku.specs.order_by('spec_id')
+    sku_key = []
+    for spec in sku_specs:
+        sku_key.append(spec.option.id)
+
+    # 获取当前商品的所有SKU
+    skus = sku.spu.sku_set.all()
+    # 构建不同规格参数（选项）的sku字典
+    spec_sku_map = {}
+    for s in skus:
+        # 获取sku的规格参数
+        s_specs = s.specs.order_by('spec_id')
+        # 用于形成规格参数-sku字典的键
+        key = []
+        for spec in s_specs:
+            key.append(spec.option.id)
+        # 向规格参数-sku字典添加记录
+        spec_sku_map[tuple(key)] = s.id
+
+    # 以下代码为：在每个选项上绑定对应的sku_id值
+    # 获取当前商品的规格信息
+    goods_specs = sku.spu.specs.order_by('id')
+    # 若当前sku的规格信息不完整，则不再继续
+    if len(sku_key) < len(goods_specs):
+        return
+    for index, spec in enumerate(goods_specs):
+        # 复制当前sku的规格键
+        key = sku_key[:]
+        # 该规格的选项
+        spec_options = spec.options.all()
+        for option in spec_options:
+            # 在规格参数sku字典中查找符合当前规格的sku
+            key[index] = option.id
+            option.sku_id = spec_sku_map.get(tuple(key))
+        spec.spec_options = spec_options
+
+    return goods_specs
 
 
 

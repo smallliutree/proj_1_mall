@@ -1,13 +1,14 @@
 from django.shortcuts import render
 from fdfs_client.client import Fdfs_client
 from django.views import View
-from utils.goods import get_breadcrumb
+from utils.goods import get_breadcrumb, get_goods_specs
 from apps.goods.models import GoodsCategory, SKU
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from haystack.views import SearchView
 from apps.contents.models import ContentCategory
 from utils.goods import get_categories
+
 
 # client = Fdfs_client('utils/fastdfs/client.conf')
 # client.upload_by_filename('/home/ubuntu/Desktop/0.png')
@@ -107,7 +108,20 @@ class DetailView(View):
 
     def get(self, request, sku_id):
 
-        context = {
 
+        try:
+            sku = SKU.objects.get(id=sku_id)
+        except SKU.DoesNotExist:
+            return render(request, '404.html')
+        categories = get_categories()
+        breadcrumb = get_breadcrumb(sku.category)
+
+        goods_specs = get_goods_specs(sku)
+
+        context = {
+            'categories': categories,
+            'breadcrumb': breadcrumb,
+            'sku': sku,
+            'specs': goods_specs,
         }
         return render(request, 'detail.html', context=context)

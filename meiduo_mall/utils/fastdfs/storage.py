@@ -12,5 +12,5 @@ class MyStorage(Storage):
 
     def url(self, name):
 
-        return 'http://192.168.180.136:8888/' + name
+        return 'http://192.168.180.137:8888/' + name
 

@@ -2,12 +2,13 @@ from django.shortcuts import render
 from fdfs_client.client import Fdfs_client
 from django.views import View
 from utils.goods import get_breadcrumb, get_goods_specs
-from apps.goods.models import GoodsCategory, SKU
+from apps.goods.models import GoodsCategory, SKU, GoodsVisitCount
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from haystack.views import SearchView
 from apps.contents.models import ContentCategory
 from utils.goods import get_categories
+from datetime import date
 
 
 # client = Fdfs_client('utils/fastdfs/client.conf')
@@ -125,3 +126,28 @@ class DetailView(View):
             'specs': goods_specs,
         }
         return render(request, 'detail.html', context=context)
+
+
+class GoodsVisitView(View):
+    def post(self, request, cat_id):
+
+        try:
+            category = GoodsCategory.objects.get(id=cat_id)
+        except GoodsCategory.DoesNotExist:
+            return JsonResponse({'code': 400, 'errmsg': '缺少必传参数'})
+
+        today = date.today()
+        try:
+            today_data = GoodsVisitCount.objects.get(category=category, date=today)
+        except GoodsVisitCount.DoesNotExist:
+            GoodsVisitCount.objects.create(
+                category=category,
+                date=today,
+                count=1
+            )
+        else:
+            today_data.count += 1
+            today_data.save()
+
+        return JsonResponse({'code': 0, 'errmsg': 'ok'})
+

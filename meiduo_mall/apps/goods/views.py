@@ -70,7 +70,7 @@ class ListView(View):
 class HotView(View):
     def get(self, request, category_id):
 
-        skus = SKU.objects.filter(id=category_id, is_launched=True).order_by('-sales')[0 : 2]
+        skus = SKU.objects.filter(category_id=category_id, is_launched=True).order_by('-sales')[0 : 2]
         hot_skus = []
         for sku in skus:
             hot_skus.append({

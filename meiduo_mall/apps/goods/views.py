@@ -5,13 +5,12 @@ from utils.goods import get_breadcrumb
 from apps.goods.models import GoodsCategory, SKU
 from django.http import JsonResponse
 from django.core.paginator import Paginator
-
-# Create your views here.
+from haystack.views import SearchView
 from apps.contents.models import ContentCategory
 from utils.goods import get_categories
 
-client = Fdfs_client('utils/fastdfs/client.conf')
-client.upload_by_filename('/home/ubuntu/Desktop/0.png')
+# client = Fdfs_client('utils/fastdfs/client.conf')
+# client.upload_by_filename('/home/ubuntu/Desktop/0.png')
 
 
 class IndexView(View):
@@ -81,6 +80,27 @@ class HotView(View):
             })
 
         return JsonResponse({'code':0, 'errmsg':'OK', 'hot_skus':hot_skus})
+
+
+class MySearchView(SearchView):
+    '''重写SearchView类'''
+    def create_response(self):
+        page = self.request.GET.get('page')
+        # 获取搜索结果
+        context = self.get_context()
+        data_list = []
+        for sku in context['page'].object_list:
+            data_list.append({
+                'id':sku.object.id,
+                'name':sku.object.name,
+                'price':sku.object.price,
+                'default_image_url':sku.object.default_image.url,
+                'searchkey':context.get('query'),
+                'page_size':context['page'].paginator.num_pages,
+                'count':context['page'].paginator.count
+            })
+        # 拼接参数, 返回
+        return JsonResponse(data_list, safe=False)
 
 
 class DetailView(View):

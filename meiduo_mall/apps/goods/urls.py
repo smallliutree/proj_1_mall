@@ -6,5 +6,6 @@ urlpatterns = [
     path('list/<int:category_id>/skus/', ListView.as_view()),
     path('hot/<int:category_id>/', HotView.as_view()),
 
+    path('search/', MySearchView()),
     path('detail/', DetailView.as_view()),
 ]

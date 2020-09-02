@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'apps.areas',
     'apps.contents',
     'apps.goods',
+    'apps.carts',
     'corsheaders',
     'haystack',
 ]

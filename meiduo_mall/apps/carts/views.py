@@ -34,7 +34,15 @@ class CartsView(View):
 
             return JsonResponse({'code': 0, 'errmsg': 'ok'})
         else:
-            carts = {}
+            cookie_carts = request.COOKIES.get('carts')
+            if cookie_carts is None:
+                carts = {}
+            else:
+                carts = pickle.loads(base64.b64decode(cookie_carts))
+
+            if sku_id in carts:
+                origin_count = carts[sku_id]['count']
+                count += origin_count
             carts[sku_id] = {
                 'count': count,
                 'selected': True

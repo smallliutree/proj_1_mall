@@ -52,3 +52,38 @@ class CartsView(View):
             response = JsonResponse({'code': 0, 'errmsg': '添加成功'})
             response.set_cookie(key='carts', value=carts_base64.decode(), max_age=14 * 24 * 3600)
             return response
+
+    def get(self, request):
+        user = request.user
+        if user.is_authenticated:
+            redis_cli = get_redis_connection('carts')
+            selected_ids = redis_cli.smembers('selected_%s' % user.id)
+            sku_id_counts = redis_cli.hgetall('carts_%s' % user.id)
+            carts = {}
+
+            for sku_id, count in sku_id_counts.items():
+                carts[sku_id] = {
+                    'count': count,
+                    'selected': sku_id in selected_ids
+                }
+        else:
+            cookie_carts = request.COOKIES.get('carts')
+            if cookie_carts is not None:
+                carts = pickle.loads(base64.b64decode(cookie_carts))
+            else:
+                carts = {}
+
+        ids = carts.keys()
+        skus = SKU.objects.filter(id__in=ids)
+        skus_list = []
+        for sku in skus:
+            skus_list.append({
+                'id': sku.id,
+                'name': sku.name,
+                'count': carts.get(sku.id).get('count'),
+                'selected': str(carts.get(sku.id).get('selected')),  # 将True，转'True'，方便json解析
+                'default_image_url': sku.default_image.url,
+                'price': str(sku.price),  # 从Decimal('10.2')中取出'10.2'，方便json解析
+                'amount': str(sku.price * carts.get(sku.id).get('count')),
+            })
+        return JsonResponse({'code': 0, 'cart_skus': skus_list, 'errmsg': 'ok'})

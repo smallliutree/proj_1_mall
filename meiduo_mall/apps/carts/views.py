@@ -29,7 +29,8 @@ class CartsView(View):
 
         if user.is_authenticated:
             redis_cli = get_redis_connection('carts')
-            redis_cli.hset('carts_%s' % user.id, sku_id, count)
+            # redis_cli.hset('carts_%s' % user.id, sku_id, count)
+            redis_cli.hincrby('carts_%s' % user.id, sku_id, count)
             redis_cli.sadd('selected_%s' % user.id, sku_id)
 
             return JsonResponse({'code': 0, 'errmsg': 'ok'})
@@ -62,8 +63,8 @@ class CartsView(View):
             carts = {}
 
             for sku_id, count in sku_id_counts.items():
-                carts[sku_id] = {
-                    'count': count,
+                carts[int(sku_id)] = {
+                    'count': int(count),
                     'selected': sku_id in selected_ids
                 }
         else:

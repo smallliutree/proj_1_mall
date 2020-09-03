@@ -87,3 +87,59 @@ class CartsView(View):
                 'amount': str(sku.price * carts.get(sku.id).get('count')),
             })
         return JsonResponse({'code': 0, 'cart_skus': skus_list, 'errmsg': 'ok'})
+
+    def put(self, request):
+        data = json.loads(request.body.decode())
+        sku_id = data.get('sku_id')
+        count = data.get('count')
+        selected = data.get('selected')
+
+        if not all([sku_id, count]):
+            return JsonResponse({'code': 400, 'errmsg': '缺少必传参数'})
+            # 判断sku_id是否存在
+        try:
+            sku = SKU.objects.get(id=sku_id)
+        except SKU.DoesNotExist:
+            return JsonResponse({'code': 400, 'errmsg': '商品sku_id不存在'})
+            # 判断count是否为数字
+        try:
+            count = int(count)
+        except Exception:
+            return JsonResponse({'code': 400, 'errmsg': '参数count有误'})
+
+        user = request.user
+        if user.is_authenticated:
+            redis_cli = get_redis_connection('carts')
+            redis_cli.hset('carts_%s' % user.id, sku_id, count)
+            if selected:
+                redis_cli.sadd('selected_%s' % user.id, sku_id)
+            else:
+                redis_cli.srem('selected_%s' % user.id, sku_id)
+
+            cart_sku = {
+                'id': sku_id,
+                'count': count,
+                'selected': selected,
+                'name': sku.name,
+                'default_image_url': sku.default_image.url,
+                'price': sku.price,
+                'amount': sku.price * count,
+            }
+            return JsonResponse({'code': 0, 'errmsg': '修改购物车成功', 'cart_sku': cart_sku})
+        else:
+            cookie_cart = request.COOKIES.get('carts')
+            if cookie_cart is not None:
+                carts = pickle.loads(base64.b64decode(cookie_cart))
+            else:
+                carts = {}
+
+            if sku_id in carts:
+                carts[sku_id] = {
+                    'count': count,
+                    'selected': selected
+                }
+            base64_cart = base64.b64encode(pickle.dumps(carts))
+            response = JsonResponse({'code': 0, 'count':count})
+            response.set_cookie('carts', base64_cart.decode(), max_age=14 * 24 * 3600)
+
+            return response

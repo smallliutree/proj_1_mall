@@ -143,3 +143,26 @@ class CartsView(View):
             response.set_cookie('carts', base64_cart.decode(), max_age=14 * 24 * 3600)
 
             return response
+
+    def delete(self, request):
+        data = json.loads(request.body.decode())
+        sku_id = data.get('sku_id')
+
+        user = request.user
+        if user.is_authenticated:
+            redis_cli = get_redis_connection('carts')
+            redis_cli.hdel('carts_%s' % user.id,sku_id)
+            redis_cli.srem('selected_%s' % user.id, sku_id)
+            return JsonResponse({'code': 0, 'errmsg': 'ok'})
+        else:
+            cookie_cart = request.COOKIES.get('carts')
+            if cookie_cart is not None:
+                carts = pickle.loads(base64.b64decode(cookie_cart))
+            else:
+                carts = {}
+            if sku_id in carts:
+                del carts[sku_id]
+            base64_carts = base64.b64encode(pickle.dumps(carts))
+            response = JsonResponse({'code': 0, 'errmsg': 'ok'})
+            response.set_cookie('carts', base64_carts.decode(), max_age=14 * 24 * 3600)
+            return response

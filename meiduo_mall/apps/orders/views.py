@@ -117,4 +117,7 @@ class CommentView(LoginRequiredMixin, View):
             order.total_amount += (custom_count * sku.price)
         order.save()
 
+        redis_cli.hdel('carts_%s' % user.id, *ids)
+        redis_cli.srem('selected_%s' % user.id, *ids)
+
         return JsonResponse({'code':0,'order_id':order.order_id,'errmsg':'ok'})

@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'apps.contents',
     'apps.goods',
     'apps.carts',
+    'apps.orders',
     'corsheaders',
     'haystack',
 ]

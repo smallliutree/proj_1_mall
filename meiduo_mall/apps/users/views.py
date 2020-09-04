@@ -15,7 +15,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from apps.users.models import Address
 
 from apps.users.utils import check_verify_email_token
-
+from apps.carts.utils import merge_cookie_to_redis
 
 class UsernameCountView(View):
     """判断用户名是否重复注册"""
@@ -113,6 +113,8 @@ class LoginView(View):
             request.session.set_expiry(0)
 
         response = JsonResponse({'code': 0, 'errmsg': 'ok'})
+
+        response = merge_cookie_to_redis(request, response)
 
         response.set_cookie('username', user.username, max_age=3600 * 24 * 15)
 

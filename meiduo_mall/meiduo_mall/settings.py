@@ -263,3 +263,17 @@ HAYSTACK_CONNECTIONS = {
 # 当添加、修改、删除数据时，自动生成索引
 # HAYSTACK_SIGNAL_PROCESSOR = 'haystack.signals.RealtimeSignalProcessor'
 HAYSTACK_SEARCH_RESULTS_PER_PAGE = 5
+
+import datetime
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+    ),
+}
+
+JWT_AUTH = {
+    'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1),
+    'JWT_RESPONSE_PAYLOAD_HANDLER': 'apps.meiduo_admin.utlis.jwt_response_payload_handler',
+}

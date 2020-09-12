@@ -4,11 +4,12 @@ from rest_framework.permissions import IsAdminUser
 from datetime import date, timedelta
 
 from apps.users.models import User
+from apps.goods.models import GoodsVisitCount
 
 
 class UserTotalCountView(APIView):
     # 指定管理员权限
-    permission_classes = [IsAdminUser]
+    # permission_classes = [IsAdminUser]
 
     def get(self, request):
         # 获取当前日期
@@ -23,7 +24,7 @@ class UserTotalCountView(APIView):
 
 class UserDayCountView(APIView):
     # 指定管理员权限
-    permission_classes = [IsAdminUser]
+    # permission_classes = [IsAdminUser]
 
     def get(self, request):
         # 获取当前日期
@@ -38,7 +39,7 @@ class UserDayCountView(APIView):
 
 class UserActiveCountView(APIView):
     # 指定管理员权限
-    permission_classes = [IsAdminUser]
+    # permission_classes = [IsAdminUser]
 
     def get(self, request):
         # 获取当前日期
@@ -53,13 +54,13 @@ class UserActiveCountView(APIView):
 
 class UserOrderCountView(APIView):
     # 指定管理员权限
-    permission_classes = [IsAdminUser]
+    # permission_classes = [IsAdminUser]
 
     def get(self, request):
         # 获取当前日期
         now_date = date.today()
         # 获取当日下单用户数量  orders__create_time 订单创建时间
-        count = User.objects.filter(orders__create_time__gte=now_date).count()
+        count = User.objects.filter(orderinfo__create_time__gte=now_date).count()
         return Response({
             "count": count,
             "date": now_date
@@ -68,7 +69,7 @@ class UserOrderCountView(APIView):
 
 class UserMonthCountView(APIView):
     # 指定管理员权限
-    permission_classes = [IsAdminUser]
+    # permission_classes = [IsAdminUser]
 
     def get(self, request):
         # 获取当前日期
@@ -92,3 +93,44 @@ class UserMonthCountView(APIView):
             })
 
             return Response(date_list)
+
+
+class GoodsDayView(APIView):
+
+    def get(self,request):
+        # 获取当天日期
+        now_date=date.today()
+        # 获取当天访问的商品分类数量信息
+        data=GoodsVisitCount.objects.filter(date=now_date)
+        # 序列化返回分类数量
+        data_list = []
+        for good in data:
+            data_list.append({
+                'category': good.category.name,
+                'count': good.count
+            })
+
+        return Response(data_list)
+
+
+from rest_framework.generics import ListAPIView
+from apps.meiduo_admin.serializers.users import UserSerializer
+from apps.meiduo_admin.utils import NumPage
+from apps.users.models import User
+
+
+class UserView(ListAPIView):
+    # 指定使用的序列化器
+    serializer_class = UserSerializer
+    # 指定分页器
+    pagination_class = NumPage
+
+    # 重写get_queryset方法，根据前端是否传递keyword值返回不同查询结果
+    def get_queryset(self):
+        # 获取前端传递的keyword值
+        keyword = self.request.query_params.get('keyword')
+        # 如果keyword是空字符，则说明要获取所有用户数据
+        if keyword is '' or keyword is None:
+            return User.objects.all()
+        else:
+            return User.objects.filter(username=keyword)

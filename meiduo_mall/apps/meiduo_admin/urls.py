@@ -11,4 +11,7 @@ urlpatterns = [
     path('statistical/day_active/', views.UserActiveCountView.as_view()),
     path('statistical/day_orders/', views.UserOrderCountView.as_view()),
     path('statistical/month_increment/', views.UserMonthCountView.as_view()),
+    path('statistical/goods_day_views/', views.GoodsDayView.as_view()),
+
+    path('users/', views.UserView.as_view()),
 ]
